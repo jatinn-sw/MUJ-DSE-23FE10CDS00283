@@ -1,0 +1,62 @@
+llm:
+  provider: gemini
+  model: gemini-3.5-flash
+  temperature: 0
+  max_tokens: 4000
+
+embedding:
+  model: gemini-embedding-001
+  dimension: 3072
+
+retrieval:
+  top_k: 5
+  similarity_threshold: 0.65
+  max_search_results: 10
+  internal_top_k: 10
+
+analysis:
+  max_claims: 15
+  min_importance_score: 0.5
+
+source_ranking:
+  weights:
+    semantic_similarity: 0.50
+    keyword_similarity: 0.20
+    source_quality: 0.15
+    recency: 0.15
+
+cache:
+  enabled: true
+  ttl_hours: 24
+
+file_upload:
+  max_size_mb: 50
+  allowed_extensions:
+    - .pdf
+    - .docx
+    - .txt
+
+api:
+  semantic_scholar:
+    base_url: https://api.semanticscholar.org/graph/v1
+    rate_limit: 100
+  crossref:
+    base_url: https://api.crossref.org
+    rate_limit: 50
+  web_search:
+    provider: serpapi
+    base_url: https://serpapi.com/search
+    rate_limit: 100
+
+logging:
+  level: INFO
+  format: json
+
+evaluation:
+  dataset_path: evaluation/annotations.json
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - confusion_matrix

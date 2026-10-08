@@ -1,0 +1,402 @@
+[
+  {
+    "id": "ANN_001",
+    "claim": "Our proposed model achieved 94.2% accuracy on the benchmark dataset.",
+    "category": "PERFORMANCE",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Results show the proposed architecture achieved 94.2% top-1 accuracy on ImageNet.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_002",
+    "claim": "The proposed architecture drastically surpasses all existing methods in every single domain.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Our model shows superior performance on 3 of the 5 evaluated datasets with a 1.2% average margin.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_003",
+    "claim": "Higher learning rates consistently improved convergence speed without causing instability.",
+    "category": "CAUSAL",
+    "ground_truth_verdict": "CONTRADICTED",
+    "context": "At learning rates above 0.01, loss diverged within 5 epochs on all test runs.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_004",
+    "claim": "The algorithm guarantees global optimality under non-convex constraint spaces.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Empirical convergence to local minima was observed in 88% of runs; theoretical bounds apply strictly to convex relaxations.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_005",
+    "claim": "Quantum annealing will replace classical optimization in commercial hardware by next year.",
+    "category": "PREDICTIVE",
+    "ground_truth_verdict": "INSUFFICIENT_EVIDENCE",
+    "context": "Current coherence times remain limited to milliseconds, and scaling roadmap timelines vary significantly.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_006",
+    "claim": "Training time was reduced by 35% compared to the baseline transformer.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Total wall-clock training dropped from 48.2 hours to 31.3 hours (a 35.1% reduction).",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_007",
+    "claim": "The framework generalizes effectively to clinical settings.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "Validation was conducted on retrospective hospital records from a single medical center with specific demographics.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_008",
+    "claim": "Memory consumption decreased from 16GB to 4GB during inference.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Peak VRAM usage was measured at 3.98GB compared to 16.1GB for the unquantized baseline.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_009",
+    "claim": "Our model completely eliminates all hallucinations in generated medical summaries.",
+    "category": "PERFORMANCE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Factuality scoring improved from 82% to 94%, with ungrounded statements dropping from 14% to 3.8%.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_010",
+    "claim": "Increasing model depth beyond 50 layers caused vanishing gradients in standard SGD.",
+    "category": "CAUSAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Gradient norm dropped below 1e-6 in layers 1-10 when depth reached 54 layers without residual connections.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_011",
+    "claim": "The method scales linearly with input sequence length O(N).",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Theoretical computational complexity and empirical runtime measurements both scaled with O(N) rather than O(N^2).",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_012",
+    "claim": "The proposed strategy completely outclasses human doctors across all diagnostic tasks.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "The model achieved an F1 of 0.89 vs 0.85 for resident doctors on a closed chest X-ray challenge.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_013",
+    "claim": "Data augmentation increased test set robustness against adversarial perturbations.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "FGSM attack resistance increased by 18.4% when adversarial training and Gaussian noise augmentation were applied.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_014",
+    "claim": "No pre-processing was necessary before feeding raw signals to the network.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "CONTRADICTED",
+    "context": "All raw audio signals were normalized, resampled to 16kHz, and transformed via STFT before model input.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_015",
+    "claim": "Economic returns on AI adoption exceed 500% across all small business sectors.",
+    "category": "STATISTICAL",
+    "ground_truth_verdict": "INSUFFICIENT_EVIDENCE",
+    "context": "A pilot survey of 12 marketing agencies reported cost savings, but macro sectoral longitudinal data is absent.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_016",
+    "claim": "Dropout rate of 0.5 yielded optimal validation F1 compared to 0.2 and 0.8.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Validation F1 peaked at 0.912 with dropout=0.5, versus 0.864 with p=0.2 and 0.841 with p=0.8.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_017",
+    "claim": "The pipeline runs fully locally on consumer mobile hardware.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "Tested on Snapdragon 8 Gen 2 devices with 12GB RAM; lower-end hardware required cloud offloading.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_018",
+    "claim": "Cross-entropy loss converged faster than focal loss on balanced datasets.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Cross-entropy achieved target loss threshold in 14 epochs, whereas focal loss required 22 epochs.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_019",
+    "claim": "Our framework is the first known algorithmic solution for resume information extraction.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Prior automated parsing literature dates back to 2003 with HMMs and 2018 with BiLSTM-CRF approaches.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_020",
+    "claim": "Fine-tuning on domain corpora produced higher token overlap on specialized terminology.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Domain vocabulary coverage increased by 27.6% after 3 epochs of domain-adaptive continued pre-training.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_021",
+    "claim": "The proposed architecture eliminates the need for attention mechanisms altogether.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "Linear recurrent state spaces replaced self-attention in the backbone, but cross-attention remained in the decoder.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_022",
+    "claim": "GPU power consumption remained strictly under 75 Watts during peak batch processing.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "CONTRADICTED",
+    "context": "Telemetry logs showed peak power spikes reaching 145W during batch size 64 processing.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_023",
+    "claim": "The technique provides zero-shot transfer to previously unseen linguistic families.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "INSUFFICIENT_EVIDENCE",
+    "context": "Tested on Romance and Germanic languages; evaluations on Sino-Tibetan or Niger-Congo families were not conducted.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_024",
+    "claim": "Latent space visualization demonstrated distinct cluster separation among semantic classes.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "t-SNE and UMAP projections exhibited well-separated clusters with silhouette scores exceeding 0.74.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_025",
+    "claim": "Our algorithm achieves state-of-the-art results on every established benchmark.",
+    "category": "PERFORMANCE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Ranked 1st on GLUE benchmark but 4th on SuperGLUE and 6th on MMLU evaluations.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_026",
+    "claim": "Pre-training on synthetic data alone matched the accuracy of web-scraped data.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "Synthetic data matched web data on math reasoning tasks, but degraded by 12% on creative generation.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_027",
+    "claim": "Cosine similarity threshold of 0.65 yielded the highest precision-recall balance.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Threshold sweep from 0.40 to 0.90 confirmed 0.65 achieved maximum F1 score of 0.84.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_028",
+    "claim": "Removing layer normalization led to immediate gradient explosion during backpropagation.",
+    "category": "CAUSAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Without LayerNorm, weights exploded to NaN values within the initial 120 training iterations.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_029",
+    "claim": "The model has achieved sentient reasoning capabilities comparable to human thought.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "System performs statistical token prediction on language datasets without subjective cognitive experience.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_030",
+    "claim": "Inference latency was measured at 14.2 milliseconds per sentence on an NVIDIA RTX 4090.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Benchmarking across 10,000 sentences averaged 14.2ms ± 1.1ms per inference pass.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_031",
+    "claim": "Synthetic audio generation was indistinguishable from human recordings in all perceptual metrics.",
+    "category": "PERFORMANCE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "MUSHRA listening tests scored synthesized voice at 4.2 out of 5.0, compared to 4.8 for pristine human recordings.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_032",
+    "claim": "Quantization to INT4 reduced perplexity score on Wikitext-2.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "CONTRADICTED",
+    "context": "Wikitext-2 perplexity degraded from 5.41 (FP16) to 6.89 (INT4), indicating worse language modeling.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_033",
+    "claim": "The proposed protocol ensures absolute cryptographic security against quantum cryptanalysis.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Security relies on lattice-based hardness assumptions; ongoing cryptanalytic developments continue.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_034",
+    "claim": "The dataset contains 150,000 annotated image-text pairs across 12 object categories.",
+    "category": "STATISTICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Descriptive statistics confirm exactly 150,000 paired samples distributed over 12 semantic classes.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_035",
+    "claim": "Applying temperature scaling improved calibration error from 14.5% to 3.2%.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Expected Calibration Error (ECE) dropped from 0.145 to 0.032 following post-hoc temperature optimization.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_036",
+    "claim": "The proposed framework functions seamlessly without any training data or labels.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "The inference module requires no training labels, but the underlying pre-trained foundation model was trained on billions of tokens.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_037",
+    "claim": "Cache hit rate in production deployment consistently exceeded 92%.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Production metrics logged over 30 days recorded an average cache hit ratio of 92.4%.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_038",
+    "claim": "All participants in the user study unanimously preferred Interface B.",
+    "category": "STATISTICAL",
+    "ground_truth_verdict": "CONTRADICTED",
+    "context": "User survey results showed 68% preferred B, 24% preferred A, and 8% expressed no preference.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_039",
+    "claim": "The model will permanently solve climate change modeling uncertainties.",
+    "category": "PREDICTIVE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "The neural simulator accelerates regional atmospheric simulations but does not resolve chaotic climate dynamics.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_040",
+    "claim": "Prompt engineering alone improved zero-shot arithmetic accuracy by 22%.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Chain-of-thought prompting raised GSM8K accuracy from 45.2% to 67.4% (+22.2%).",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_041",
+    "claim": "The proposed algorithm operates in constant memory O(1) space complexity.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "CONTRADICTED",
+    "context": "Auxiliary buffer allocation scales proportionally with tree depth O(D), which is logarithmic in best case.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_042",
+    "claim": "Cross-validation with 5 folds produced consistent scores with standard deviation under 0.02.",
+    "category": "STATISTICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "Across the 5 folds, scores were [0.88, 0.89, 0.87, 0.88, 0.89] with standard deviation of 0.008.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_043",
+    "claim": "The system detects deepfakes with 100% precision across all compression codecs.",
+    "category": "PERFORMANCE",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Detection precision reached 98.1% on raw video but degraded to 76.4% on heavily compressed H.264 streams.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_044",
+    "claim": "Sparse attention patterns halved memory overhead while retaining 99% of downstream accuracy.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "KV-cache memory was reduced by 51.3% while GLUE benchmark score was 99.2% of dense attention.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_045",
+    "claim": "Universal basic income will become globally mandatory by 2030 due to automation.",
+    "category": "PREDICTIVE",
+    "ground_truth_verdict": "INSUFFICIENT_EVIDENCE",
+    "context": "Policy discussions exist across multiple think tanks, but legislative implementation lacks consensus.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_046",
+    "claim": "Batch normalization outperformed layer normalization on vision classification tasks.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "ResNet-50 reached 76.5% with BatchNorm versus 74.8% with LayerNorm on ImageNet.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_047",
+    "claim": "The pipeline is completely immune to prompt injection attacks.",
+    "category": "SCIENTIFIC",
+    "ground_truth_verdict": "OVERSTATED",
+    "context": "Defense resisted 92% of known direct attacks, but adaptive indirect jailbreaks bypassed filtering in 18% of attempts.",
+    "is_overstated": true
+  },
+  {
+    "id": "ANN_048",
+    "claim": "Knowledge distillation reduced model parameters from 7B to 1.3B with minimal loss.",
+    "category": "NUMERICAL",
+    "ground_truth_verdict": "SUPPORTED",
+    "context": "The distilled 1.3B student preserved 96.1% of the 7B teacher model's benchmark accuracy.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_049",
+    "claim": "The proposed optimizer converges in fewer iterations than Adam on non-convex landscapes.",
+    "category": "COMPARATIVE",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "Demonstrated on transformer language modeling; vision transformers showed equivalent convergence rates.",
+    "is_overstated": false
+  },
+  {
+    "id": "ANN_050",
+    "claim": "The mechanism guarantees zero data leakage across multi-tenant isolation boundaries.",
+    "category": "FACTUAL",
+    "ground_truth_verdict": "PARTIALLY_SUPPORTED",
+    "context": "Logical isolation passed all pen-tests, but hardware-level timing side-channels were not mitigated.",
+    "is_overstated": false
+  }
+]
