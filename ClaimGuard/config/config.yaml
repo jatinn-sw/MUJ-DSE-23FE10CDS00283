@@ -1,12 +1,12 @@
 llm:
   provider: gemini
-  model: gemini-3.5-flash
+  model: gemini-1.5-flash
   temperature: 0
   max_tokens: 4000
 
 embedding:
-  model: gemini-embedding-001
-  dimension: 3072
+  model: text-embedding-004
+  dimension: 768
 
 retrieval:
   top_k: 5

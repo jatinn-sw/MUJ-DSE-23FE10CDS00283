@@ -659,11 +659,12 @@ def render_evidence_graph():
         verdict = a.verdict if a else "UNKNOWN"
         vcolor = verdict_colors.get(verdict, "#3b82f6")
         
+        conf_val = a.confidence if (a and a.confidence is not None) else 0.0
         G.add_node(
             c.claim_id,
             node_type="claim",
             label=f"{c.claim_id}",
-            title=f"<b>Claim {c.claim_id}</b><br>{c.text[:120]}...<br><b>Verdict:</b> {verdict}<br><b>Confidence:</b> {a.confidence:.0% if a else 0}%",
+            title=f"<b>Claim {c.claim_id}</b><br>{c.text[:120]}...<br><b>Verdict:</b> {verdict}<br><b>Confidence:</b> {conf_val:.0%}",
             color=vcolor,
             size=22,
         )

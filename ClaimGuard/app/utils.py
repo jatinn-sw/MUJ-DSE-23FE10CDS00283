@@ -199,17 +199,20 @@ def _get_embedding_provider() -> str:
 
 def _get_gemini_api_key() -> str:
     """Get Gemini API key from environment."""
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    return key.strip()
 
 
 def _get_openai_api_key() -> str:
     """Get OpenAI API key from environment."""
-    return os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY")
+    key = os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY") or ""
+    return key.strip()
 
 
 def _get_anthropic_api_key() -> str:
     """Get Anthropic API key from environment."""
-    return os.getenv("ANTHROPIC_API_KEY")
+    key = os.getenv("ANTHROPIC_API_KEY") or ""
+    return key.strip()
 
 
 def get_llm_client():
@@ -277,7 +280,7 @@ class _NewGeminiLLMClient:
     def __init__(self, client: Client, model: str):
         self.client = client
         self.model_name = model.replace("models/", "")
-        self.model = self.client.models.get(self.model_name)
+        self.chat = type('obj', (object,), {'completions': type('obj', (object,), {'create': self._create})})()
     
     def _create(self, model: str = None, messages: list = None, temperature: float = 0, max_tokens: int = 4000, 
                 response_format: dict = None, **kwargs):
@@ -294,7 +297,7 @@ class _NewGeminiLLMClient:
         
         full_prompt = f"{system_prompt}\n\n{user_content}" if system_prompt else user_content
         
-        generate_config = genai.GenerateContentConfig(
+        generate_config = genai.types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_tokens,
         )
@@ -303,7 +306,7 @@ class _NewGeminiLLMClient:
             generate_config.response_mime_type = "application/json"
         
         target_model = model or self.model_name
-        models_to_try = [target_model, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+        models_to_try = [target_model, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
         seen = set()
         candidates = []
         for m in models_to_try:
@@ -314,12 +317,11 @@ class _NewGeminiLLMClient:
         last_error = None
         for cand in candidates:
             try:
-                cand_model = self.client.models.get(cand)
-                response = cand_model.generate_content(
-                    full_prompt,
+                response = self.client.models.generate_content(
+                    model=cand,
+                    contents=full_prompt,
                     config=generate_config
                 )
-                self.model = cand_model
                 self.model_name = cand
                 
                 class Choice:
