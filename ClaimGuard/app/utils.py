@@ -127,8 +127,11 @@ def retry_with_backoff(
                         delay = min(base_delay * (2 ** attempt), max_delay)
                         logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
                         time.sleep(delay)
-            logger.error(f"All retries exhausted. Last error: {last_exception}")
-            raise last_exception
+                    else:
+                        logger.error(f"All retries exhausted. Last error: {e}")
+                        raise
+            if last_exception is not None:
+                raise last_exception
         return wrapper
     return decorator
 
