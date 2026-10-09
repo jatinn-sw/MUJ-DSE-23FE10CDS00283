@@ -15,7 +15,7 @@ load_dotenv()
 
 class LLMConfig(BaseModel):
     provider: Literal["openai", "gemini", "anthropic"] = "gemini"
-    model: str = "gemini-3.8-flash"
+    model: str = "gemini-3.5-flash-lite"
     temperature: float = 0.0
     max_tokens: int = 4000
 
@@ -40,7 +40,7 @@ class EmbeddingConfig(BaseModel):
 
 class RetrievalConfig(BaseModel):
     top_k: int = 5
-    similarity_threshold: float = 0.65
+    similarity_threshold: float = 0.45
     max_search_results: int = 10
     internal_top_k: int = 10
 

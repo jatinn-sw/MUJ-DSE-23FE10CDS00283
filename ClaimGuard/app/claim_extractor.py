@@ -110,7 +110,11 @@ class ClaimExtractor:
             )
             
             result = safe_json_parse(response.choices[0].message.content)
-            return result.get("claims", [])
+            if isinstance(result, list):
+                return result
+            if isinstance(result, dict):
+                return result.get("claims", [])
+            return self._fallback_extraction(sentences)
         except Exception as e:
             print(f"LLM extraction failed: {e}")
             return self._fallback_extraction(sentences)

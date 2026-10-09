@@ -144,10 +144,14 @@ def render_upload_page(run_analysis: Optional[Callable] = None):
                 st.error("File exceeds 50MB limit.")
             else:
                 if st.button("🔬 Start Evidence Audit", type="primary", use_container_width=True, key="btn_upload_start"):
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp:
-                        tmp.write(uploaded_file.getvalue())
-                        tmp_path = tmp.name
+                    from pathlib import Path
+                    upload_dir = Path("cache/uploads")
+                    upload_dir.mkdir(parents=True, exist_ok=True)
+                    safe_name = Path(uploaded_file.name).name
+                    file_path = upload_dir / safe_name
+                    with open(file_path, "wb") as f:
+                        f.write(uploaded_file.getvalue())
+                    tmp_path = str(file_path.resolve())
                     
                     st.session_state.uploaded_file = tmp_path
                     st.session_state.processing_stage = None
@@ -303,83 +307,230 @@ def _is_stage_completed(stages, stage_key, current_stage):
 
 
 def render_dashboard():
-    report = st.session_state.get("report")
-    if not report:
-        st.warning("No report available")
-        return
+    st.markdown("<h1 style='margin-bottom: 0.5rem;'>Evidence Audit & Benchmark Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: var(--text-secondary); margin-bottom: 1.5rem;'>Real-time evidence verification metrics for audited research papers and ground-truth model benchmarks.</p>", unsafe_allow_html=True)
+
+    tab_audit, tab_benchmark = st.tabs(["📊 Live Paper Audit Statistics", "🎯 Ground-Truth Benchmark Evaluation"])
     
-    claims = report.claims
-    analyses = report.analyses
+    with tab_audit:
+        report = st.session_state.get("report")
+        if not report:
+            st.info("ℹ️ No paper audit active in this session yet. Upload a research document or load the sample paper to generate live audit statistics.")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("📤 Go to Paper Upload", use_container_width=True, key="dash_go_upload"):
+                    st.session_state.page = "upload"
+                    st.rerun()
+            with c2:
+                if st.button("📑 Load Sample Research Paper", use_container_width=True, key="dash_load_sample"):
+                    from pathlib import Path
+                    candidates = [
+                        Path("sample_data/A_Unified_LLM_Based_Framework_for_Resume_Job_Description_Semantic_Alignment_Using_PuterJS___Springer.pdf"),
+                        Path(__file__).parent.parent.parent / "sample_data" / "A_Unified_LLM_Based_Framework_for_Resume_Job_Description_Semantic_Alignment_Using_PuterJS___Springer.pdf",
+                    ]
+                    sample_path = next((c.resolve() for c in candidates if c.exists()), None)
+                    if sample_path:
+                        st.session_state.uploaded_file = str(sample_path)
+                        st.session_state.processing_stage = None
+                        st.session_state.progress_percentage = 0
+                        st.session_state.progress_messages = []
+                        st.session_state.page = "processing"
+                        st.rerun()
+        else:
+            claims = report.claims
+            analyses = report.analyses
+            
+            verdict_counts = {}
+            for a in analyses:
+                verdict_counts[a.verdict] = verdict_counts.get(a.verdict, 0) + 1
+            
+            confidences = [a.confidence for a in analyses if a.confidence is not None]
+            avg_conf = (sum(confidences) / len(confidences)) if confidences else 0.0
+            total_ext = len(report.external_sources) + len(report.web_sources)
+            
+            col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+            metrics = [
+                ("Total Claims", len(claims)),
+                ("Supported", verdict_counts.get("SUPPORTED", 0)),
+                ("Partial", verdict_counts.get("PARTIALLY_SUPPORTED", 0)),
+                ("Contradicted", verdict_counts.get("CONTRADICTED", 0)),
+                ("Overstated", verdict_counts.get("OVERSTATED", 0)),
+                ("Insufficient", verdict_counts.get("INSUFFICIENT_EVIDENCE", 0)),
+                ("Avg Confidence", f"{avg_conf:.0%}"),
+            ]
+            for col, (label, value) in zip([col1, col2, col3, col4, col5, col6, col7], metrics):
+                with col:
+                    st.markdown(f"""
+                    <div class="metric-card">
+                        <div class="metric-value">{value}</div>
+                        <div class="metric-label">{label}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                st.subheader("Evidence Distribution")
+                fig = _create_verdict_chart(verdict_counts)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                st.subheader("Document Statistics")
+                doc = report.document
+                st.metric("Pages", doc.num_pages)
+                st.metric("Word Count", f"{doc.word_count:,}")
+                st.metric("Sections", len(doc.sections))
+                st.metric("External Sources", total_ext)
+                st.metric("Processing Time", f"{report.processing_time:.1f}s" if hasattr(report, 'processing_time') else "N/A")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.subheader("Recent Claims")
+            for claim, analysis in zip(claims[:5], analyses[:5]):
+                _render_claim_card(claim, analysis)
+
+    with tab_benchmark:
+        _render_benchmark_section()
+
+
+def _render_benchmark_section():
+    st.markdown("""
+    <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: var(--accent-primary);">Ground-Truth Benchmark Suite</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 0;">
+            <b>Evaluation Integrity:</b> These metrics are computed strictly against human-labelled ground-truth test annotations 
+            (<code>evaluation/annotations.json</code>). They measure overall multi-class claim verdict classification accuracy, 
+            precision, recall, and F1-score across standardized research claims. <i>They are strictly decoupled from individual paper audits.</i>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    from pathlib import Path
+    results_file = Path("evaluation/evaluation_results.json")
+    if not results_file.exists():
+        candidates = [
+            Path("ClaimGuard/evaluation/evaluation_results.json"),
+            Path(__file__).parent.parent.parent / "evaluation" / "evaluation_results.json",
+        ]
+        results_file = next((c for c in candidates if c.exists()), results_file)
+
+    has_saved_results = results_file.exists()
     
-    verdict_counts = {}
-    for a in analyses:
-        verdict_counts[a.verdict] = verdict_counts.get(a.verdict, 0) + 1
-    
-    st.markdown("<h1>Research Evidence Audit</h1>", unsafe_allow_html=True)
-    
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    metrics = [
-        ("Total Claims", len(claims)),
-        ("Supported", verdict_counts.get("SUPPORTED", 0)),
-        ("Partial", verdict_counts.get("PARTIALLY_SUPPORTED", 0)),
-        ("Contradicted", verdict_counts.get("CONTRADICTED", 0)),
-        ("Overstated", verdict_counts.get("OVERSTATED", 0)),
-        ("Insufficient", verdict_counts.get("INSUFFICIENT_EVIDENCE", 0)),
-    ]
-    for col, (label, value) in zip([col1, col2, col3, col4, col5, col6], metrics):
-        with col:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{value}</div>
-                <div class="metric-label">{label}</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.subheader("Evidence Distribution")
-        fig = _create_verdict_chart(verdict_counts)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.subheader("Document Statistics")
-        doc = report.document
-        st.metric("Pages", doc.num_pages)
-        st.metric("Word Count", f"{doc.word_count:,}")
-        st.metric("Sections", len(doc.sections))
-        st.metric("External Sources", len(report.external_sources) + len(report.web_sources))
-        st.metric("Processing Time", f"{report.processing_time:.1f}s" if hasattr(report, 'processing_time') else "N/A")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    st.subheader("Recent Claims")
-    for claim, analysis in zip(claims[:5], analyses[:5]):
-        _render_claim_card(claim, analysis)
+    col_btn, col_info = st.columns([1, 3])
+    with col_btn:
+        run_btn = st.button("▶ Run / Refresh Benchmark", type="primary", use_container_width=True, key="btn_run_eval_benchmark")
+    with col_info:
+        if has_saved_results:
+            st.caption(f"Cached results available at: `{results_file.name}`")
+        else:
+            st.caption("No cached benchmark results yet. Click to evaluate against ground-truth dataset.")
+
+    if run_btn:
+        with st.spinner("Running evaluation benchmark suite on annotations dataset..."):
+            try:
+                from evaluation.evaluate import run_evaluation
+                res = run_evaluation()
+                st.session_state["benchmark_results"] = res
+                st.success("Benchmark completed successfully!")
+            except Exception as e:
+                st.error(f"Benchmark error: {e}")
+
+    results_data = st.session_state.get("benchmark_results")
+    if not results_data and has_saved_results:
+        try:
+            with open(results_file, "r", encoding="utf-8") as f:
+                results_data = json.load(f)
+        except Exception:
+            pass
+
+    if results_data:
+        clf = results_data.get("classification_metrics", {})
+        sys_m = results_data.get("system_metrics", {})
+        
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Overall Accuracy", f"{clf.get('accuracy', 0):.1%}")
+        c2.metric("Macro Precision", f"{clf.get('macro_precision', 0):.1%}")
+        c3.metric("Macro Recall", f"{clf.get('macro_recall', 0):.1%}")
+        c4.metric("Macro F1-Score", f"{clf.get('macro_f1', 0):.1%}")
+        c5.metric("Weighted F1", f"{clf.get('weighted_f1', 0):.1%}")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.subheader("Confusion Matrix")
+            cm = clf.get("confusion_matrix", [])
+            labels = clf.get("labels", ["SUPPORTED", "PARTIALLY_SUPPORTED", "CONTRADICTED", "OVERSTATED", "INSUFFICIENT_EVIDENCE"])
+            short_labels = [l.replace("_SUPPORTED", "").replace("_EVIDENCE", "") for l in labels]
+            if cm:
+                fig_cm = go.Figure(data=go.Heatmap(
+                    z=cm,
+                    x=short_labels,
+                    y=short_labels,
+                    colorscale="Blues",
+                    text=[[str(val) for val in row] for row in cm],
+                    texttemplate="%{text}",
+                    textfont={"size": 13, "color": "white"},
+                    hoverongaps=False
+                ))
+                fig_cm.update_layout(
+                    title="Predicted vs Actual Verdicts",
+                    xaxis_title="Predicted Label",
+                    yaxis_title="True Label",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font_color="#f1f5f9",
+                    height=360,
+                    margin=dict(t=40, b=40, l=40, r=20)
+                )
+                st.plotly_chart(fig_cm, use_container_width=True)
+        
+        with col2:
+            st.subheader("Per-Class Classification Metrics")
+            per_class = clf.get("per_class", {})
+            rows = []
+            for lbl, stats in per_class.items():
+                rows.append({
+                    "Class": lbl,
+                    "Precision": f"{stats.get('precision', 0):.1%}",
+                    "Recall": f"{stats.get('recall', 0):.1%}",
+                    "F1 Score": f"{stats.get('f1_score', 0):.1%}",
+                    "Support": stats.get("support", 0)
+                })
+            if rows:
+                st.dataframe(rows, use_container_width=True, hide_index=True)
+            
+            if sys_m:
+                st.caption(f"⚡ Latency: {sys_m.get('average_latency_sec', 0)*1000:.0f} ms/claim • JSON Success: {sys_m.get('json_parsing_success_rate', 1):.1%}")
 
 
 def _create_verdict_chart(verdict_counts):
     labels = ["SUPPORTED", "PARTIALLY_SUPPORTED", "CONTRADICTED", "OVERSTATED", "INSUFFICIENT_EVIDENCE"]
-    colors = ["#10b981", "#f59e0b", "#ef4444", "#ef4444", "#6b7280"]
+    display_labels = ["Supported", "Partially Supported", "Contradicted", "Overstated", "Insufficient"]
+    colors = ["#10b981", "#f59e0b", "#ef4444", "#f43f5e", "#6b7280"]
     values = [verdict_counts.get(l, 0) for l in labels]
     
+    total = sum(values)
+    if total == 0:
+        values = [1, 0, 0, 0, 0]
+        display_labels = ["No data", "", "", "", ""]
+    
     fig = go.Figure(data=[go.Pie(
-        labels=labels,
+        labels=display_labels,
         values=values,
-        hole=0.5,
-        marker_colors=colors,
-        textinfo="label+percent",
+        hole=0.55,
+        marker=dict(colors=colors, line=dict(color='#0f172a', width=2)),
+        textinfo="percent+value" if total > 0 else "none",
         textfont_size=12,
+        hovertemplate="<b>%{label}</b><br>Count: %{value}<br>Share: %{percent}<extra></extra>" if total > 0 else "No data"
     )])
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font_color="#f1f5f9",
         showlegend=True,
-        height=300,
-        margin=dict(t=0, b=0, l=0, r=0),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
+        height=320,
+        margin=dict(t=10, b=30, l=10, r=10),
     )
     return fig
 
@@ -615,7 +766,7 @@ def render_evidence_graph():
     analysis_map = {a.claim_id: a for a in analyses}
 
     # Filtering controls
-    col1, col2, col3 = st.columns([2, 2, 2])
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
     with col1:
         verdict_filter = st.selectbox(
             "Filter Verdict",
@@ -626,6 +777,8 @@ def render_evidence_graph():
         max_claims_shown = st.slider("Max Claims to Display", min_value=3, max_value=min(25, max(3, len(claims))), value=min(10, len(claims)))
     with col3:
         include_pages = st.checkbox("Show Page Nodes", value=True)
+    with col4:
+        renderer_mode = st.radio("Renderer Engine", ["PyVis Physics", "Plotly 2D"], horizontal=True, key="graph_renderer_mode")
 
     filtered_claims = []
     for c in claims:
@@ -658,12 +811,13 @@ def render_evidence_graph():
         a = analysis_map.get(c.claim_id)
         verdict = a.verdict if a else "UNKNOWN"
         vcolor = verdict_colors.get(verdict, "#3b82f6")
+        conf_str = f"{a.confidence:.0%}" if (a and a.confidence is not None) else "0%"
         
         G.add_node(
             c.claim_id,
             node_type="claim",
             label=f"{c.claim_id}",
-            title=f"<b>Claim {c.claim_id}</b><br>{c.text[:120]}...<br><b>Verdict:</b> {verdict}<br><b>Confidence:</b> {a.confidence:.0% if a else 0}%",
+            title=f"<b>Claim {c.claim_id}</b><br>{c.text[:120]}...<br><b>Verdict:</b> {verdict}<br><b>Confidence:</b> {conf_str}",
             color=vcolor,
             size=22,
         )
@@ -729,72 +883,6 @@ def render_evidence_graph():
                         )
                     G.add_edge(c.claim_id, ext_node_id, edge_type="CONTRADICTED_BY", color="#ef4444")
 
-    # Layout
-    pos = nx.spring_layout(G, k=0.7, iterations=50, seed=42)
-
-    # Edge traces
-    edge_x = []
-    edge_y = []
-    for edge in G.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_x.extend([x0, x1, None])
-        edge_y.extend([y0, y1, None])
-
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=1.5, color="rgba(148, 163, 184, 0.4)"),
-        hoverinfo="none",
-        mode="lines"
-    )
-
-    # Node traces
-    node_x = []
-    node_y = []
-    node_text = []
-    node_hover = []
-    node_color = []
-    node_size = []
-
-    for node in G.nodes():
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        data = G.nodes[node]
-        node_text.append(data.get("label", ""))
-        node_hover.append(data.get("title", ""))
-        node_color.append(data.get("color", "#3b82f6"))
-        node_size.append(data.get("size", 14))
-
-    node_trace = go.Scatter(
-        x=node_x, y=node_y,
-        mode="markers+text",
-        hoverinfo="text",
-        text=node_text,
-        textposition="top center",
-        hovertext=node_hover,
-        marker=dict(
-            color=node_color,
-            size=node_size,
-            line=dict(width=2, color="#0f172a")
-        ),
-        textfont=dict(size=10, color="#f1f5f9")
-    )
-
-    fig = go.Figure(
-        data=[edge_trace, node_trace],
-        layout=go.Layout(
-            showlegend=False,
-            hovermode="closest",
-            margin=dict(b=10, l=10, r=10, t=10),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            paper_bgcolor="#111827",
-            plot_bgcolor="#111827",
-            height=580,
-        )
-    )
-
     # Top graph stats
     c1, c2, c3, c4 = st.columns(4)
     with c1:
@@ -806,7 +894,112 @@ def render_evidence_graph():
     with c4:
         st.metric("External Corroborations", sum(1 for n in G.nodes() if str(n).startswith("EXT_")))
 
-    st.plotly_chart(fig, use_container_width=True)
+    if renderer_mode == "PyVis Physics":
+        try:
+            from pyvis.network import Network
+            net = Network(height="580px", width="100%", bgcolor="#111827", font_color="#f1f5f9")
+            for node, attrs in G.nodes(data=True):
+                net.add_node(
+                    str(node),
+                    label=attrs.get("label", str(node)),
+                    title=attrs.get("title", str(node)),
+                    color=attrs.get("color", "#3b82f6"),
+                    size=attrs.get("size", 14),
+                )
+            for u, v, attrs in G.edges(data=True):
+                net.add_edge(
+                    str(u), str(v),
+                    color=attrs.get("color", "#64748b"),
+                    title=attrs.get("edge_type", "")
+                )
+            net.set_options("""
+            var options = {
+              "physics": {
+                "forceAtlas2Based": {
+                  "gravitationalConstant": -50,
+                  "centralGravity": 0.01,
+                  "springLength": 90,
+                  "springConstant": 0.08
+                },
+                "maxVelocity": 40,
+                "solver": "forceAtlas2Based",
+                "timestep": 0.35
+              }
+            }
+            """)
+            html_content = net.generate_html()
+            components.html(html_content, height=600, scrolling=True)
+        except Exception as pyvis_err:
+            st.warning(f"PyVis physics rendering unavailable ({pyvis_err}). Rendering with Plotly 2D.")
+            renderer_mode = "Plotly 2D"
+
+    if renderer_mode == "Plotly 2D":
+        # Layout
+        pos = nx.spring_layout(G, k=0.7, iterations=50, seed=42)
+
+        # Edge traces
+        edge_x = []
+        edge_y = []
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_x.extend([x0, x1, None])
+            edge_y.extend([y0, y1, None])
+
+        edge_trace = go.Scatter(
+            x=edge_x, y=edge_y,
+            line=dict(width=1.5, color="rgba(148, 163, 184, 0.4)"),
+            hoverinfo="none",
+            mode="lines"
+        )
+
+        # Node traces
+        node_x = []
+        node_y = []
+        node_text = []
+        node_hover = []
+        node_color = []
+        node_size = []
+
+        for node in G.nodes():
+            x, y = pos[node]
+            node_x.append(x)
+            node_y.append(y)
+            data = G.nodes[node]
+            node_text.append(data.get("label", ""))
+            node_hover.append(data.get("title", ""))
+            node_color.append(data.get("color", "#3b82f6"))
+            node_size.append(data.get("size", 14))
+
+        node_trace = go.Scatter(
+            x=node_x, y=node_y,
+            mode="markers+text",
+            hoverinfo="text",
+            text=node_text,
+            textposition="top center",
+            hovertext=node_hover,
+            marker=dict(
+                color=node_color,
+                size=node_size,
+                line=dict(width=2, color="#0f172a")
+            ),
+            textfont=dict(size=10, color="#f1f5f9")
+        )
+
+        fig = go.Figure(
+            data=[edge_trace, node_trace],
+            layout=go.Layout(
+                showlegend=False,
+                hovermode="closest",
+                margin=dict(b=10, l=10, r=10, t=10),
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                paper_bgcolor="#111827",
+                plot_bgcolor="#111827",
+                height=580,
+            )
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
     # Legend
     st.markdown("""

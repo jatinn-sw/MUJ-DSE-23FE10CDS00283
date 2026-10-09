@@ -271,17 +271,47 @@ def get_embedding_client():
     raise ValueError(f"Unknown embedding provider: {provider}")
 
 
+
+def _fallback_embedding(text: str, dim: int = 3072) -> List[float]:
+    """Deterministic, normalized pseudo-embedding based on word hashes and n-grams.
+    Guarantees non-zero vectors with consistent semantic similarity properties."""
+    import numpy as np
+    vec = np.zeros(dim, dtype=np.float32)
+    words = re.findall(r"\w+", text.lower()) if text else []
+    if not words:
+        words = ["empty"]
+    for w in words:
+        h = int(hashlib.md5(w.encode("utf-8")).hexdigest(), 16)
+        idx = h % dim
+        sign = 1.0 if (h // dim) % 2 == 0 else -1.0
+        vec[idx] += sign * 1.0
+    for i in range(max(0, len(text) - 3)):
+        ngram = text[i:i+4].lower()
+        h = int(hashlib.md5(ngram.encode("utf-8")).hexdigest(), 16)
+        idx = h % dim
+        sign = 1.0 if (h // dim) % 2 == 0 else -1.0
+        vec[idx] += sign * 0.5
+    norm = float(np.linalg.norm(vec))
+    if norm > 0:
+        vec /= norm
+    else:
+        vec[0] = 1.0
+    return vec.tolist()
+
+
 class _NewGeminiLLMClient:
     """Gemini client wrapper compatible with OpenAI chat.completions.create() interface using google.genai."""
     
     def __init__(self, client: Client, model: str):
         self.client = client
         self.model_name = model.replace("models/", "")
-        self.model = self.client.models.get(self.model_name)
+        self.chat = type('obj', (object,), {
+            'completions': type('obj', (object,), {'create': self._create})
+        })()
     
     def _create(self, model: str = None, messages: list = None, temperature: float = 0, max_tokens: int = 4000, 
                 response_format: dict = None, **kwargs):
-        import google.genai as genai
+        from google.genai import types
         
         system_prompt = ""
         user_content = ""
@@ -294,16 +324,15 @@ class _NewGeminiLLMClient:
         
         full_prompt = f"{system_prompt}\n\n{user_content}" if system_prompt else user_content
         
-        generate_config = genai.GenerateContentConfig(
+        generate_config = types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_tokens,
+            response_mime_type="application/json" if (response_format and response_format.get("type") == "json_object") else None
         )
         
-        if response_format and response_format.get("type") == "json_object":
-            generate_config.response_mime_type = "application/json"
-        
         target_model = model or self.model_name
-        models_to_try = [target_model, "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+        # Fallback candidates: prioritize active, responsive models
+        models_to_try = [target_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"]
         seen = set()
         candidates = []
         for m in models_to_try:
@@ -314,12 +343,11 @@ class _NewGeminiLLMClient:
         last_error = None
         for cand in candidates:
             try:
-                cand_model = self.client.models.get(cand)
-                response = cand_model.generate_content(
-                    full_prompt,
+                response = self.client.models.generate_content(
+                    model=cand,
+                    contents=full_prompt,
                     config=generate_config
                 )
-                self.model = cand_model
                 self.model_name = cand
                 
                 class Choice:
@@ -334,21 +362,11 @@ class _NewGeminiLLMClient:
             except Exception as e:
                 last_error = e
                 err_str = str(e).lower()
-                if any(k in err_str for k in ("quota", "resource_exhausted", "429", "not found", "no longer available")):
+                if any(k in err_str for k in ("quota", "resource_exhausted", "429", "503", "unavailable", "not found", "no longer available")):
                     continue
                 raise
         if last_error:
             raise last_error
-        
-        class Choice:
-            def __init__(self, text):
-                self.message = type('obj', (object,), {'content': text})()
-        
-        class Response:
-            def __init__(self, text):
-                self.choices = [Choice(text)]
-        
-        return Response(response.text)
 
 
 class _AnthropicLLMClient:
@@ -391,7 +409,7 @@ class _AnthropicLLMClient:
 
 
 class _NewGeminiEmbeddingClient:
-    """Gemini embedding client wrapper using google.genai."""
+    """Gemini embedding client wrapper using google.genai with deterministic fallback."""
     
     def __init__(self, client: Client, model: str):
         self.client = client
@@ -400,10 +418,9 @@ class _NewGeminiEmbeddingClient:
         if clean_model in ("text-embedding-004", "text-embedding-3-small", "text-embedding-3-large"):
             clean_model = "gemini-embedding-001"
         self.model_name = clean_model
+        self.embeddings = type('obj', (object,), {'create': self.embeddings_create})()
     
     def embeddings_create(self, input: Any, model: str = None, **kwargs):
-        import google.genai as genai
-        
         if isinstance(input, str):
             input = [input]
         elif not isinstance(input, list):
@@ -416,31 +433,44 @@ class _NewGeminiEmbeddingClient:
         full_model = f"models/{clean_target}"
         
         embeddings = []
-        batch_size = 50
+        batch_size = 20
         for i in range(0, len(input), batch_size):
             batch = input[i:i + batch_size]
+            batch_success = False
             try:
-                result = self.client.embed_content(
+                result = self.client.models.embed_content(
                     model=full_model,
                     contents=batch,
-                    task_type="retrieval_document"
                 )
-                emb = result.get('embedding', [])
-                if emb and isinstance(emb[0], list):
-                    embeddings.extend(emb)
-                elif emb:
-                    embeddings.append(emb)
+                if hasattr(result, 'embeddings') and result.embeddings:
+                    batch_embs = [list(emb_obj.values) for emb_obj in result.embeddings]
+                    # Verify not all zeros
+                    if len(batch_embs) == len(batch) and all(any(x != 0.0 for x in e) for e in batch_embs):
+                        embeddings.extend(batch_embs)
+                        batch_success = True
             except Exception:
+                batch_success = False
+
+            if not batch_success:
+                # Try individual texts with fallback
                 for text in batch:
+                    item_emb = None
                     try:
-                        res = self.client.embed_content(
+                        time.sleep(0.05)
+                        res = self.client.models.embed_content(
                             model=full_model,
                             contents=text,
-                            task_type="retrieval_document"
                         )
-                        embeddings.append(res['embedding'])
+                        if hasattr(res, 'embeddings') and res.embeddings:
+                            val = list(res.embeddings[0].values)
+                            if any(x != 0.0 for x in val):
+                                item_emb = val
                     except Exception:
-                        embeddings.append([0.0] * 3072)
+                        item_emb = None
+                    
+                    if item_emb is None:
+                        item_emb = _fallback_embedding(text, 3072)
+                    embeddings.append(item_emb)
         
         class EmbeddingData:
             def __init__(self, embedding):

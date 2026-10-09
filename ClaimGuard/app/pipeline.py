@@ -140,7 +140,8 @@ class ClaimGuardPipeline:
         if callback:
             callback("embeddings_built", "Generating vector embeddings...", stage_progress("embeddings_built") - 5)
         self.state.embedding_manager = create_embedding_manager()
-        doc_id = generate_id("DOC", self.state.document.filename)
+        doc_sig = f"{self.state.document.num_pages}_{self.state.document.word_count}_{len(self.state.document.sentences)}"
+        doc_id = generate_id("DOC", doc_sig)
         if not self.state.embedding_manager.load_cache(doc_id):
             self.state.embedding_manager.build_index(self.state.document.sentences)
             self.state.embedding_manager.save_cache(doc_id)
@@ -212,15 +213,16 @@ class ClaimGuardPipeline:
         total = len(self.state.claims)
         base = stage_progress("web_search")
         span = STAGE_WEIGHTS.get("llm_analysis", 20.0)
+        from app.academic_search import rank_academic_sources
         for i, claim in enumerate(self.state.claims):
             if callback:
                 pct = base + (i / max(1, total)) * span
                 callback("llm_analysis", f"Auditing claim {i+1}/{total}: \"{claim.text[:35]}...\"", pct)
             internal = self.state.internal_evidence.get(claim.claim_id, [])
-            external = [s for s in self.state.external_sources]
-            web = [s for s in self.state.web_sources]
+            claim_external = rank_academic_sources(claim, self.state.external_sources)[:5] if self.state.external_sources else []
+            claim_web = self.state.web_sources[:3] if self.state.web_sources else []
 
-            analysis = analyze_claim(claim, internal, external, web)
+            analysis = analyze_claim(claim, internal, claim_external, claim_web)
             self.state.analyses.append(analysis)
         if callback:
             callback("llm_analysis", f"Completed audit for {total} claims", stage_progress("llm_analysis"))
