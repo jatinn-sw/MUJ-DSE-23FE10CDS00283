@@ -6,6 +6,9 @@ from typing import Dict, Any, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from app.claim_extractor import Claim
 from app.evidence_retriever import Evidence
 from app.llm_analyzer import analyze_claim
@@ -91,9 +94,9 @@ def run_evaluation(annotations_path: str = "evaluation/annotations.json") -> Dic
         if analysis.verdict in VERDICT_CLASSES:
             json_successes += 1
 
-        match_str = "✅" if pred_verdict == ground_truth else "❌"
-        if (i + 1) % 10 == 0 or (i + 1) == len(data):
-            print(f"[{i+1:02d}/{len(data)}] {match_str} True: {ground_truth:<21} Pred: {pred_verdict:<21} ({elapsed*1000:.1f}ms)")
+        match_str = "[PASS]" if pred_verdict == ground_truth else "[DIFF]"
+        if (i + 1) % 5 == 0 or (i + 1) == len(data):
+            print(f"[{i+1:02d}/{len(data)}] {match_str} True: {ground_truth:<21} Pred: {pred_verdict:<21} ({elapsed*1000:.1f}ms)", flush=True)
 
     # Compute metrics
     clf_metrics = compute_classification_metrics(y_true, y_pred)

@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Ensure project root is in sys.path
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
 import streamlit as st
 from typing import List, Dict, Any, Optional
 import json
@@ -5,7 +13,6 @@ import time
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
-from pathlib import Path
 
 from app.frontend.styles import inject_css
 from app.frontend.components import (
